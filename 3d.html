@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>3D</title>
+    <title>spotLight</title>
   </head>
   <body>
-    <canvas id="canvas"></canvas>
+    <canvas id="canvas" width="300" height="300"></canvas>
 
     <script type="importmap">
       {
@@ -17,6 +17,7 @@
         }
       }
     </script>
+
     <script type="module">
       import { GLTFLoader } from "GLTFLoader";
       import * as THREE from "three";
@@ -38,12 +39,12 @@
       camera.position.set(0, 1, 4); // 카메라 위치
 
       // 씬에 빛 추가 (ambientLight 및 SpotLight)
-      const ambientLight = new THREE.AmbientLight(0x404040, 1); // 부드러운 전체 조명
+      const ambientLight = new THREE.AmbientLight(0xfffd, 1); // 부드러운 전체 조명
       scene.add(ambientLight);
 
       const spotLight = new THREE.SpotLight(0xffffbb);
-      spotLight.position.set(-1, 5, 2);
-      spotLight.angle = Math.PI / 6;
+      spotLight.position.set(-2, 5, 2);  // 초기 조명 위치
+      spotLight.angle = Math.PI / 15;
       spotLight.intensity = 100;
       spotLight.penumbra = 1;
       spotLight.castShadow = true;
@@ -59,17 +60,57 @@
       // GLTF 모델 로드
       const loader = new GLTFLoader();
       loader.load("oil_can/scene.gltf", function (gltf) {
-      scene.add(gltf.scene);
+        scene.add(gltf.scene);
 
         // 모델 회전 애니메이션
         function animate() {
           requestAnimationFrame(animate);
+
+          // 카메라가 움직일 때마다 Spotlight도 같이 이동하도록 위치를 업데이트
+          spotLight.position.copy(camera.position);  // 카메라의 위치에 따라 조명의 위치를 업데이트
+
           gltf.scene.rotation.y += 0.005;
           controls.update(); // OrbitControls 업데이트
           renderer.render(scene, camera);
         }
         animate();
       });
+
+      // 구체와 상자 추가
+      const ballMat = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(0xD57B9C),  // 색상 지정시 THREE.Color 사용
+        roughness: 0.5,
+        metalness: 1.0,
+      });
+      const ballGeometry = new THREE.SphereGeometry(0.25, 32, 32);
+      const ballMesh = new THREE.Mesh(ballGeometry, ballMat);
+      ballMesh.position.set(1, 0.25, 1);
+      ballMesh.rotation.y = Math.PI;
+      ballMesh.castShadow = true;
+      ballMesh.receiveShadow = true;
+      scene.add(ballMesh);
+
+      const boxMat = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(0xD57B9C),  // 색상 지정시 THREE.Color 사용
+        roughness: 0.5,
+        metalness: 1.0,
+      });
+      const boxGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+      const boxMesh = new THREE.Mesh(boxGeometry, boxMat);
+      boxMesh.position.set(-0.5, 0.25, -1);
+      boxMesh.castShadow = true;
+      boxMesh.receiveShadow = true;
+      scene.add(boxMesh);
+
+      // 구체와 상자 색상 변경 예시
+      setTimeout(() => {
+        ballMat.color.set(0x00ff00);  // 3초 후 구체의 색을 초록색으로 변경
+        boxMat.color.set(0x0000ff);   // 3초 후 상자의 색을 파란색으로 변경
+
+        // 색상 변경 후 재질 업데이트
+        ballMat.needsUpdate = true;
+        boxMat.needsUpdate = true;
+      }, 3000);
 
       // 윈도우 크기 변경 시 처리 (화면 리사이즈)
       window.addEventListener("resize", () => {
